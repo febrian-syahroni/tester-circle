@@ -4,6 +4,7 @@ import cors from "cors";
 import userRoutes from "./routes/userRoutes";
 import authRoutes from "./routes/authRoutes";
 import postRoutes from "./routes/postRoutes";
+import commentRoutes from './routes/commentRoutes';
 import path from 'path';
 
 dotenv.config();
@@ -18,6 +19,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/posts", postRoutes);
+app.use('/api/comments', commentRoutes);
 
 // Global error handling
 app.use(

@@ -12,6 +12,13 @@ interface Post {
   imageUrl?: string;
   user?: User;
   userName?: string; // Tambahkan ini jika backend mengirim userName langsung
+  comments: Comment[];
+}
+
+interface Comment {
+  id: number;
+  content: string;
+  userName: string;
 }
 
 interface PostsState {
@@ -66,6 +73,30 @@ export const fetchPosts = createAsyncThunk<Post[]>(
   }
 );
 
+// Thunk untuk menambahkan komentar
+export const addComment = createAsyncThunk<Comment, { postId: number; content: string }>(
+  "post/addComment",
+  async ({ postId, content }, { rejectWithValue }) => {
+    const token = Cookies.get("token");
+
+    if (!token) {
+      throw new Error("Pengguna tidak terotentikasi.");
+    }
+
+    try {
+      const response = await axios.post(`/posts/${postId}/comments`, { content }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || "Gagal menambahkan komentar");
+    }
+  }
+);
+
 const postsSlice = createSlice({
   name: "posts",
   initialState,
@@ -95,6 +126,13 @@ const postsSlice = createSlice({
       .addCase(createPost.rejected, (state, action) => {
         state.error = action.error.message || "Failed to create post";
         state.loading = false;
+      })
+      .addCase(addComment.fulfilled, (state, action) => {
+        const { postId } = action.meta.arg;
+        const post = state.posts.find(p => p.id === postId);
+        if (post) {
+          post.comments.push(action.payload);
+        }
       });
   },
 });

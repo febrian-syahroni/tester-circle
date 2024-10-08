@@ -38,15 +38,28 @@ const getComments = async (req: Request, res: Response): Promise<void> => {
   const { postId } = req.params;
 
   try {
+    if (!postId || isNaN(Number(postId))) {
+      res.status(400).json({ message: 'ID pos tidak valid' });
+      return;
+    }
+
     const comments = await prisma.comment.findMany({
       where: { postId: Number(postId) },
-      include: { user: { select: { name: true } } }, // Assuming you want the user's name in the response
+      include: { 
+        user: { 
+          select: { 
+            id: true,
+            name: true 
+          } 
+        } 
+      },
+      orderBy: { createdAt: 'desc' }
     });
 
     res.status(200).json(comments);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Kesalahan saat mengambil komentar:', error);
+    res.status(500).json({ message: 'Terjadi kesalahan server saat mengambil komentar' });
   }
 };
 

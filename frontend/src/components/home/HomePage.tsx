@@ -2,6 +2,7 @@ import { useAppSelector } from "../../hooks/useAppSelector";
 import { useFetchPosts } from "../../hooks/useFetchPosts";
 import { Box, Text, Image, VStack, Divider } from "@chakra-ui/react";
 import CreatePostForm from "./CreatePostForm";
+import CommentSection from "./CommentSection";
 
 const HomePage = () => {
   useFetchPosts(); // Ambil posting saat komponen dimuat
@@ -17,6 +18,7 @@ const HomePage = () => {
           Diposting oleh {post.user?.name || post.userName || 'Pengguna tidak dikenal'}
         </Text>
         <Divider />
+        <CommentSection postId={post.id} comments={post.comments || []} />
       </VStack>
     );
   };
