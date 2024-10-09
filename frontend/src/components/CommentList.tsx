@@ -63,7 +63,7 @@ const CommentList: React.FC<CommentListProps> = ({ postId }) => {
             content: comment.content,
             userName: comment.user.name,
           }]}
-          postId={comment.postId}
+          threadId={comment.postId}
         />
       ))}
     </VStack>

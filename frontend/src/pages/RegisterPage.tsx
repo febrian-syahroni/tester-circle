@@ -1,5 +1,5 @@
 import { useForm } from "react-hook-form";
-import { register } from "../features/user/userSlice";
+// import { register } from "../features/user/userSlice";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAppDispatch } from "../hooks/useAppDispatch";
@@ -42,7 +42,7 @@ const RegisterPage = () => {
     resolver: zodResolver(registerSchema),
   });
 
-  const onSubmit = async (data: RegisterFormData) => {
+  const onSubmit = async (data: any) => {
     try {
       await dispatch(register(data) as any).unwrap();
       // Menggunakan respons sukses untuk menangani nama lengkap pengguna

@@ -36,7 +36,7 @@ const initialState: ThreadsState = {
 
 export const createThread = createAsyncThunk<Thread, { content: string; images?: File[] }>(
   "threads/createThread",
-  async ({ content, images }) => {
+  async ({ content }) => {
     // const formData = new FormData();
     // formData.append("content", content);
     // if (images) {

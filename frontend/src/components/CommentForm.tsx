@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
 import { Box, Button, Input, HStack } from '@chakra-ui/react';
-import { useAppDispatch } from '../hooks/useAppDispatch';
-import { addComment } from '../features/post/postSlice';
+// import { useAppDispatch } from '../hooks/useAppDispatch';
+// import { addComment } from '../features/post/postSlice';
 
 interface CommentFormProps {
   postId: number;
 }
 
-const CommentForm: React.FC<CommentFormProps> = ({ postId }) => {
+const CommentForm: React.FC<CommentFormProps> = ({  }) => {
   const [content, setContent] = useState('');
-  const dispatch = useAppDispatch();
+  // const dispatch = useAppDispatch();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (content.trim()) {
-      dispatch(addComment({ postId, content }));
-      setContent('');
-    }
+    // if (content.trim()) {
+    //   dispatch(addComment({ postId, content }));
+    //   setContent('');
+    // }
   };
 
   return (

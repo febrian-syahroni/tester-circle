@@ -11,14 +11,14 @@ interface PostProps {
   comments: Array<{ id: number; content: string; userName: string }>;
 }
 
-const Post: React.FC<PostProps> = ({ id, content, imageUrl, userName, comments }) => {
+const Post: React.FC<PostProps> = ({ id, content, imageUrl, userName }) => {
   return (
     <Box borderWidth="1px" borderRadius="lg" p={4} mb={4}>
       <VStack align="start" spacing={3}>
         <Text fontWeight="bold">{userName}</Text>
         <Text>{content}</Text>
         {imageUrl && <Image src={imageUrl} alt="Post image" />}
-        <CommentList comments={comments} />
+        <CommentList postId={id} />
         <CommentForm postId={id} />
       </VStack>
     </Box>
