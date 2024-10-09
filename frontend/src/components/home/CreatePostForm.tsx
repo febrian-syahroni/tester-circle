@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent } from 'react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
-import { createPost } from '../../features/post/postSlice';
-import { Box, Button, Input, Textarea, VStack } from '@chakra-ui/react';
+import { createThread } from '../../features/post/postSlice';
+import { Button, Input, Textarea, VStack, FormControl, FormLabel } from '@chakra-ui/react';
 
-const CreatePostForm = () => {
+const CreatePostForm: React.FC = () => {
   const dispatch = useAppDispatch();
   const [content, setContent] = useState('');
   const [image, setImage] = useState<File | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleContentChange = (e: ChangeEvent<HTMLTextAreaElement>) => setContent(e.target.value);
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => setImage(e.target.files?.[0] || null);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData();
     formData.append("content", content);
@@ -17,7 +20,11 @@ const CreatePostForm = () => {
     }
 
     try {
-      await dispatch(createPost(formData)).unwrap();
+      await dispatch(createThread({
+        // content: formData.get('content') as string,
+        // images: formData.getAll('images') as File[]
+        content: content,
+      })).unwrap();
       setContent("");
       setImage(null);
     } catch (error) {
@@ -26,23 +33,31 @@ const CreatePostForm = () => {
   };
 
   return (
-    <Box as="form" onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit}>
       <VStack spacing={4} align="stretch">
-        <Textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Apa yang Anda pikirkan?"
-        />
-        <Input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setImage(e.target.files?.[0] || null)}
-        />
-        <Button type="submit" colorScheme="blue">
+        <FormControl>
+          <FormLabel htmlFor="content">Konten Posting</FormLabel>
+          <Textarea
+            id="content"
+            value={content}
+            onChange={handleContentChange}
+            placeholder="Apa yang Anda pikirkan?"
+          />
+        </FormControl>
+        <FormControl>
+          <FormLabel htmlFor="image">Unggah Gambar</FormLabel>
+          <Input
+            id="image"
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+          />
+        </FormControl>
+        <Button type="submit" colorScheme="blue" isDisabled={!content.trim()}>
           Posting
         </Button>
       </VStack>
-    </Box>
+    </form>
   );
 };
 

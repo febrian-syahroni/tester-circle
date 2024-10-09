@@ -1,5 +1,5 @@
 import { useForm } from "react-hook-form";
-import { registerUser } from "../features/user/userSlice";
+import { register } from "../features/user/userSlice";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAppDispatch } from "../hooks/useAppDispatch";
@@ -18,9 +18,10 @@ import {
 } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 
-// Schema untuk validasi data registrasi
+// Schema untuk validasi data registrasi sesuai dengan dokumentasi
 const registerSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  username: z.string().min(1, "Username is required"),
+  fullname: z.string().min(1, "Full name is required"),
   email: z.string().email("Invalid email format"),
   password: z.string().min(6, "Password must be at least 6 characters long"),
 });
@@ -43,16 +44,15 @@ const RegisterPage = () => {
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
-      const resultAction = await dispatch(registerUser(data)).unwrap();
-      const fullName = resultAction.user.name;
-      // Menangani respons sukses
+      await dispatch(register(data) as any).unwrap();
+      // Menggunakan respons sukses untuk menangani nama lengkap pengguna
       Swal.fire({
         icon: "success",
-        title: `Wellcome to Circle ${fullName}`,
-        text: resultAction.message, // Pesan dari backend
+        title: `Welcome to Circle ${data.fullname}`,
+        text: "User created successfully", // Pesan dari dokumentasi
         confirmButtonText: "OK",
       }).then(() => {
-        navigate("/");
+        navigate("/"); // Redirect ke halaman home
       });
     } catch (err: any) {
       // Menangani error jika ada
@@ -82,11 +82,24 @@ const RegisterPage = () => {
           <Input
             height="48px"
             borderColor="secondary"
-            placeholder="Name"
-            id="name"
-            {...register("name")}
+            placeholder="Username"
+            id="username"
+            {...register("username")}
           />
-          {errors.name && <Text color="red">{errors.name.message}</Text>}
+          {errors.username && (
+            <Text color="red">{errors.username.message}</Text>
+          )}
+
+          <Input
+            height="48px"
+            borderColor="secondary"
+            placeholder="Full Name"
+            id="fullname"
+            {...register("fullname")}
+          />
+          {errors.fullname && (
+            <Text color="red">{errors.fullname.message}</Text>
+          )}
 
           <Input
             height="48px"

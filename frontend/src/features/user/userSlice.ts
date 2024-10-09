@@ -1,100 +1,147 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import Cookies from 'js-cookie';
-import api from "../../utils/axios"; // Assuming the Axios instance is exported as api
+import Cookies from "js-cookie";
+import api from "../../utils/axios";
 
-// Define the login thunk
+export const register = createAsyncThunk(
+  "auth/register",
+  async (
+    {
+      username,
+      fullname,
+      email,
+      password,
+    }: {
+      username: string;
+      fullname: string;
+      email: string;
+      password: string;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await api.post("/auth/register", {
+        username,
+        fullname,
+        email,
+        password,
+      });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "User already exists"
+      );
+    }
+  }
+);
+
+interface LoginType {
+  username?: string;
+  email?: string;
+  password: string;
+}
+
 export const login = createAsyncThunk(
   "auth/login",
   async (
-    { email, password }: { email: string; password: string },
+    { username, password }: LoginType,
     { rejectWithValue }
   ) => {
     try {
-      const response = await api.post("/auth/login", { email, password });
-      const { token } = response.data;
-      Cookies.set("token", token); // Save the token in localStorage
-      return token; // Return token to Redux state
+      const loginData = { username, password }
+      const response = await api.post("/auth/login", loginData);
+      const token = response.data.token;
+      Cookies.set("token", token);
+      console.log(response);
+      return token;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to login" // Improved error handling
+        error.response?.data?.message || "User tidak ditemukan atau password salah"
       );
     }
   }
 );
 
-// Define the register thunk
-export const registerUser = createAsyncThunk(
-  "auth/register",
-  async (
-    { email, password }: { email: string; password: string },
-    { rejectWithValue }
-  ) => {
+export const getUserProfile = createAsyncThunk(
+  "auth/getUserProfile",
+  async (_, { getState, rejectWithValue }) => {
     try {
-      const response = await api.post("/register", { email, password });
-      const { token } = response.data;
-      Cookies.set("token", token); // Save the token in localStorage
-      return token; // Return token to Redux state
+      const { auth } = getState() as { auth: AuthState };
+      if (!auth.token) {
+        throw new Error("No token found");
+      }
+      const response = await api.get("/auth/check-auth");
+      return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to register" // Improved error handling
+        error.response?.data?.message || "Failed to fetch user profile"
       );
     }
   }
 );
 
-// Define the AuthState interface
 interface AuthState {
   token: string | null;
+  user: any | null;
   loading: boolean;
   error: string | null;
 }
 
-// Define the initial state for the auth slice
 const initialState: AuthState = {
-  token: null, // Pastikan token diinisialisasi dengan null
+  token: Cookies.get("token") || null,
+  user: null,
   loading: false,
   error: null,
 };
 
-// Create the auth slice
 const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
     logout(state) {
-      state.token = null; // Clear token from state
-      Cookies.remove("token"); // Remove token from localStorage
+      state.token = null;
+      state.user = null;
+      Cookies.remove("token");
     },
   },
   extraReducers: (builder) => {
     builder
+      .addCase(register.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(register.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(register.rejected, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       .addCase(login.pending, (state) => {
-        state.loading = true; // Set loading to true when login is in progress
-        state.error = null; // Clear any previous errors
+        state.loading = true;
+        state.error = null;
       })
       .addCase(login.fulfilled, (state, action: PayloadAction<string>) => {
-        state.loading = false; // Set loading to false on successful login
-        state.token = action.payload; // Store the token in state
+        state.loading = false;
+        state.token = action.payload;
       })
       .addCase(login.rejected, (state, action: PayloadAction<any>) => {
-        state.loading = false; // Set loading to false on login failure
-        state.error = action.payload; // Set error message
+        state.loading = false;
+        state.error = action.payload;
       })
-      .addCase(registerUser.pending, (state) => {
-        state.loading = true; // Set loading to true when registration is in progress
-        state.error = null; // Clear any previous errors
+      .addCase(getUserProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(registerUser.fulfilled, (state, action: PayloadAction<string>) => {
-        state.loading = false; // Set loading to false on successful registration
-        state.token = action.payload; // Store the token in state
+      .addCase(getUserProfile.fulfilled, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.user = action.payload;
       })
-      .addCase(registerUser.rejected, (state, action: PayloadAction<any>) => {
-        state.loading = false; // Set loading to false on registration failure
-        state.error = action.payload; // Set error message
+      .addCase(getUserProfile.rejected, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
 
-// Export the logout action and the reducer
 export const { logout } = authSlice.actions;
 export default authSlice.reducer;

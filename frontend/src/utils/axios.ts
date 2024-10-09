@@ -1,9 +1,9 @@
 import axios from "axios";
-import Cookies from 'js-cookie';
+import Cookies from "js-cookie";
 
 // Create an instance of Axios
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api", // Mengambil baseURL dari variabel lingkungan
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000", // Mengambil baseURL dari variabel lingkungan
 });
 
 // Add a request interceptor to include the Authorization header

@@ -1,140 +1,129 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "../../utils/axios";
-import Cookies from "js-cookie"; // Assuming this is the correct import for Cookies
+import api from "../../utils/axios";
 
-interface User {
-  name: string;
-}
-
-interface Post {
+export interface Thread {
   id: number;
   content: string;
-  imageUrl?: string;
-  user?: User;
-  userName?: string; // Tambahkan ini jika backend mengirim userName langsung
-  comments: Comment[];
+  image?: string;
+  user: {
+    username: string;
+    fullname: string;
+  };
+  replies: Reply[];
 }
 
-interface Comment {
+interface Reply {
   id: number;
   content: string;
-  userName: string;
+  image?: string;
+  user: {
+    username: string;
+    fullname: string;
+  };
 }
 
-interface PostsState {
-  posts: Post[];
+interface ThreadsState {
+  threads: Thread[];
   loading: boolean;
   error: string | null;
 }
 
-const initialState: PostsState = {
-  posts: [],
+const initialState: ThreadsState = {
+  threads: [],
   loading: false,
   error: null,
 };
 
-// Thunk for creating a post
-export const createPost = createAsyncThunk<Post, FormData>(
-  "post/createPost",
-  async (formData) => {
-    const token = Cookies.get("token");
-
-    if (!token) {
-      throw new Error("Pengguna tidak terotentikasi.");
-    }
-
-    try {
-      console.log('Mengirim data:', Object.fromEntries(formData));
-      const response = await axios.post("/posts", formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      console.log('Respons dari server:', response.data);
-      return response.data;
-    } catch (error: any) {
-      console.error('Error detail:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      console.error('Error headers:', error.response?.headers);
-      throw error;
-    }
+export const createThread = createAsyncThunk<Thread, { content: string; images?: File[] }>(
+  "threads/createThread",
+  async ({ content, images }) => {
+    // const formData = new FormData();
+    // formData.append("content", content);
+    // if (images) {
+    //   images.forEach((image) => formData.append("images", image));
+    // }
+    const response = await api.post("/threads", { content }, {
+      headers: {
+        // "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data.thread;
   }
 );
 
-// FetchPosts thunk for getting posts
-export const fetchPosts = createAsyncThunk<Post[]>(
-  "posts/fetchPosts",
+export const fetchThreads = createAsyncThunk<Thread[]>(
+  "threads/fetchThreads",
   async () => {
-    const response = await axios.get("/posts");
-    console.log('Data posting yang diterima:', response.data);
+    const response = await api.get("/threads");
+    return response.data.threads;
+  }
+);
+
+export const fetchThreadDetail = createAsyncThunk<{ thread: Thread; replies: Reply[] }, number>(
+  "threads/fetchThreadDetail",
+  async (threadId) => {
+    const response = await api.get(`/threads/detail/${threadId}`);
     return response.data;
   }
 );
 
-// Thunk untuk menambahkan komentar
-export const addComment = createAsyncThunk<Comment, { postId: number; content: string }>(
-  "post/addComment",
-  async ({ postId, content }, { rejectWithValue }) => {
-    const token = Cookies.get("token");
-
-    if (!token) {
-      throw new Error("Pengguna tidak terotentikasi.");
-    }
-
-    try {
-      const response = await axios.post(`/posts/${postId}/comments`, { content }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data || "Gagal menambahkan komentar");
-    }
+export const replyToThread = createAsyncThunk<
+  Thread,
+  { threadId: number; content: string; images?: File[] }
+>("threads/replyToThread", async ({ threadId, content, images }) => {
+  const formData = new FormData();
+  formData.append("content", content);
+  if (images) {
+    images.forEach((image) => formData.append("images", image));
   }
-);
+  const response = await api.post(`/threads/reply/${threadId}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data.thread;
+});
 
-const postsSlice = createSlice({
-  name: "posts",
+const threadsSlice = createSlice({
+  name: "threads",
   initialState,
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(fetchPosts.pending, (state) => {
+      .addCase(fetchThreads.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchPosts.fulfilled, (state, action) => {
-        state.posts = Array.isArray(action.payload) ? action.payload : [];
+      .addCase(fetchThreads.fulfilled, (state, action) => {
+        state.threads = action.payload;
         state.loading = false;
       })
-      .addCase(fetchPosts.rejected, (state, action) => {
-        state.error = action.error.message || "Gagal mengambil posting";
+      .addCase(fetchThreads.rejected, (state, action) => {
+        state.error = action.error.message || "Gagal mengambil thread";
         state.loading = false;
       })
-      .addCase(createPost.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+      .addCase(createThread.fulfilled, (state, action) => {
+        state.threads.unshift(action.payload);
       })
-      .addCase(createPost.fulfilled, (state, action) => {
-        state.posts.push(action.payload);
-        state.loading = false;
+      .addCase(fetchThreadDetail.fulfilled, (state, action) => {
+        const index = state.threads.findIndex(
+          (thread) => thread.id === action.payload.thread.id
+        );
+        if (index !== -1) {
+          state.threads[index] = action.payload.thread;
+        } else {
+          state.threads.push(action.payload.thread);
+        }
       })
-      .addCase(createPost.rejected, (state, action) => {
-        state.error = action.error.message || "Failed to create post";
-        state.loading = false;
-      })
-      .addCase(addComment.fulfilled, (state, action) => {
-        const { postId } = action.meta.arg;
-        const post = state.posts.find(p => p.id === postId);
-        if (post) {
-          post.comments.push(action.payload);
+      .addCase(replyToThread.fulfilled, (state, action) => {
+        const thread = state.threads.find(
+          (t) => t.id === action.meta.arg.threadId
+        );
+        if (thread) {
+          thread.replies.push(action.payload);
         }
       });
   },
 });
 
-export default postsSlice.reducer;
+export default threadsSlice.reducer;

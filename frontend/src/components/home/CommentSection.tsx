@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Text, VStack, Input, Button } from '@chakra-ui/react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import api from '../../utils/axios';
 
 interface CommentProps {
   id: number;
@@ -22,22 +23,22 @@ const Comment: React.FC<CommentProps> = ({ id, content, userName }) => {
 };
 
 interface CommentSectionProps {
-  postId: number;
-  comments: CommentProps[];
+  threadId: number;
+  comments?: CommentProps[];
 }
 
-const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
+const CommentSection: React.FC<CommentSectionProps> = ({ threadId }) => {
   const [comments, setComments] = useState<CommentProps[]>([]);
   const [newComment, setNewComment] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchComments();
-  }, [postId]);
+  }, [threadId]);
 
   const fetchComments = async () => {
     try {
-      const response = await axios.get(`/api/comments/${postId}`);
+      const response = await api.get(`/threads/reply/${threadId}`);
       if (Array.isArray(response.data)) {
         setComments(response.data);
         setError(null);
@@ -55,7 +56,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
 
   const handleCommentSubmit = async () => {
     try {
-      await axios.post(`/api/comments/${postId}`, { content: newComment });
+      await axios.post(`/api/comments/${threadId}`, { content: newComment });
       setNewComment('');
       fetchComments(); // Memuat ulang komentar setelah mengirim
     } catch (error) {
